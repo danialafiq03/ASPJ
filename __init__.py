@@ -2,13 +2,14 @@ import math
 import os
 import random
 import shelve
-
+from urllib import parse
 import stripe
-from flask import Flask, render_template, request, redirect, url_for, session, g, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, g, flash, jsonify, make_response, render_template_string
 from flask_mail import Message, Mail
 # from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-
+from base64 import b64encode, b64decode
+import pickle
 import Message as Msg
 import Product
 import Review
@@ -662,95 +663,113 @@ def report_generation():
         return 'You do not have authorized access to this webpage.'
 
 
+# @app.route('/Products', methods=["GET", "POST"])
+# def add_to_cart():
+#     already_in_cart = False
+#     cart_dict = {}
+#     cart_list = []
+#     subtotal = 0
+#     if 'user_id' in session:
+#         user_id = session['user_id']
+#         if request.method == "POST":
+#             product_id = request.form.get('product_id')
+#             product_name = request.form.get('product_name')
+#             quantity = int(request.form.get('quantity'))
+#             price = round(float(request.form.get('price')), 2)
+#
+#             db = shelve.open('cart.db', 'c')
+#             try:
+#                 cart_dict = db['Cart']
+#             except:
+#                 print('error')
+#
+#             try:
+#                 cart_list = cart_dict[user_id]
+#             except:
+#                 pass
+#
+#             for i in range(len(cart_list)):
+#                 if product_id == cart_list[i].get_product_id():  # if cart already has the same product id
+#                     already_in_cart = True
+#                     current_quantity = cart_list[i].get_quantity()
+#                     new_quantity = current_quantity + quantity
+#                     cart_list[i].set_quantity(new_quantity)
+#
+#                     new_price = price * cart_list[i].get_quantity()
+#                     cart_list[i].set_price(new_price)
+#                     break
+#             if not already_in_cart:
+#                 product_obj = Product.Product(product_id, product_name, quantity, price)  # create new product object
+#                 cart_list.append(product_obj)
+#                 cart_dict[user_id] = cart_list
+#
+#             db['Cart'] = cart_dict
+#             db.close()
+#
+#         elif request.method == "GET":  # Counts how many things u have in cart upon loading page, displays it as Your Cart(1)
+#             db = shelve.open('cart.db', 'c')
+#             try:
+#                 cart_dict = db['Cart']
+#             except:
+#                 print('error')
+#
+#             try:
+#                 cart_list = cart_dict[user_id]
+#             except:
+#                 pass
+#
+#         for i in range(len(cart_list)):
+#             product_price = cart_list[i].get_price()
+#             subtotal += product_price
+#
+#         return render_template('trialproductpage.html', cart_dict=cart_dict,
+#                                cart_list=cart_list, subtotal=round(subtotal, 2))
+#     else:
+#         return render_template('trialproductpage.html')
+
+
 @app.route('/Products', methods=["GET", "POST"])
 def add_to_cart():
-    already_in_cart = False
-    cart_dict = {}
-    cart_list = []
-    subtotal = 0
-    if 'user_id' in session:
-        user_id = session['user_id']
-        if request.method == "POST":
-            product_id = request.form.get('product_id')
-            product_name = request.form.get('product_name')
-            quantity = int(request.form.get('quantity'))
-            price = round(float(request.form.get('price')), 2)
+    if request.method == 'POST':
+        if 'cart' in request.cookies:
+            serialized_encoded_cart_list = request.cookies.get("cart")
+            serialized_cart_list = b64decode(serialized_encoded_cart_list)
+            cart_list = pickle.loads(serialized_cart_list)
+        else:
+            cart_list = []
 
-            db = shelve.open('cart.db', 'c')
-            try:
-                cart_dict = db['Cart']
-            except:
-                print('error')
-
-            try:
-                cart_list = cart_dict[user_id]
-            except:
-                pass
-
-            for i in range(len(cart_list)):
-                if product_id == cart_list[i].get_product_id():  # if cart already has the same product id
-                    already_in_cart = True
-                    current_quantity = cart_list[i].get_quantity()
-                    new_quantity = current_quantity + quantity
-                    cart_list[i].set_quantity(new_quantity)
-
-                    new_price = price * cart_list[i].get_quantity()
-                    cart_list[i].set_price(new_price)
-                    break
-            if not already_in_cart:
-                product_obj = Product.Product(product_id, product_name, quantity, price)
-                cart_list.append(product_obj)
-                cart_dict[user_id] = cart_list
-
-            db['Cart'] = cart_dict
-            db.close()
-
-        elif request.method == "GET":  # Counts how many things u have in cart upon loading page, displays it as Your Cart(1)
-            db = shelve.open('cart.db', 'c')
-            try:
-                cart_dict = db['Cart']
-            except:
-                print('error')
-
-            try:
-                cart_list = cart_dict[user_id]
-            except:
-                pass
-
-        for i in range(len(cart_list)):
-            product_price = cart_list[i].get_price()
-            subtotal += product_price
-
-        return render_template('trialproductpage.html', cart_dict=cart_dict,
-                               cart_list=cart_list, subtotal=round(subtotal, 2))
+        product_id = request.form.get('product_id')
+        product_name = request.form.get('product_name')
+        quantity = int(request.form.get('quantity'))
+        price = round(float(request.form.get('price')), 2)
+        product_obj = Product.Product(product_id, product_name, quantity, price)
+        cart_list.append(product_obj)
+        response = make_response(redirect(url_for("cart")))
+        response.set_cookie("cart", b64encode(pickle.dumps(cart_list)))
+        return response
     else:
         return render_template('trialproductpage.html')
 
 
+
+
+
 @app.route('/cart', methods=["GET", "POST"])
 def cart():
-    cart_dict = {}
-    cart_list = []
     subtotal = 0
     if 'user_id' in session:
-        user_id = session['user_id']
-        db = shelve.open('cart.db', 'c')
-        try:
-            cart_dict = db['Cart']
-        except:
-            print('Error in retrieving cart_dict from cart.db')
-
-        try:
-            cart_list = cart_dict[user_id]
-        except:
-            pass
-
-        for i in range(len(cart_list)):
-            product_price = cart_list[i].get_price()
-            subtotal += product_price
+        if 'cart' in request.cookies:
+            serialized_encoded_cart_list = request.cookies.get("cart")
+            serialized_cart_list = b64decode(serialized_encoded_cart_list)
+            cart_list = pickle.loads(serialized_cart_list)
+            for i in range(len(cart_list)):
+                product_price = cart_list[i].get_price()
+                subtotal += product_price
+        else:
+            cart_list = []
         # cart_dict = {user_id: cart_list}
         # cart_list = [<obj>, <obj>, <obj>]
-        return render_template('cart.html', cart_dict=cart_dict, cart_list=cart_list, subtotal=round(subtotal, 2))
+        return render_template('cart.html', cart_list=cart_list, subtotal=round(subtotal, 2))
     else:
         return render_template('cart.html')
 
@@ -846,6 +865,14 @@ def success():
     db.close()
     return render_template("Thanks.html")
 
+@app.errorhandler(404)
+def page_not_found(error):
+    # note that we set the 404 status explicitly
+    template = '''
+        <h1>{}</h1>
+        <h3>{}</h3>
+    '''.format(error, parse.unquote(request.url))
+    return render_template_string(template)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')

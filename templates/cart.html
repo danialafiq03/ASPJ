@@ -2,7 +2,7 @@
 
 {% block title %}
     {% if 'user_id' in session %}
-        {{ g.user.get_full_name() }}'s Cart
+        {{ session['user']['fname'] + " " + session['user']['lname'] }}'s Cart
     {% else %}
         Please Login/Register
     {% endif %}
@@ -14,7 +14,7 @@
      <body>
         <script src="https://js.stripe.com/v3/"></script>
          <div class="container">
-            <h1 style="text-align: center;">{{ g.user.get_full_name() }}'s Cart</h1>
+            <h1 style="text-align: center;">{{ session['user']['fname'] + " " + session['user']['lname'] }}'s Cart</h1>
             <table style="width: 100%;">
 
                 <thead>
