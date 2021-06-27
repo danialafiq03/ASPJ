@@ -1,0 +1,41 @@
+<!-- ======= Header ======= -->
+  <header id="header" class="fixed-top d-flex align-items-center  header-transparent " style="background-color: #33364a">
+    <div class="container d-flex align-items-center">
+
+      <div class="logo mr-auto">
+        <h1 class="text-light"><a href="/">ABC Restaurant</a></h1>
+        <!-- Uncomment below if you prefer to use an image logo -->
+<!--         <a href="index.html"><img src="assets/img/logo.png" alt="" class="img-fluid"></a>-->
+      </div>
+      <nav class="nav-menu d-none d-lg-block">
+        <ul>
+          <li><a href="/">Home</a></li>
+          <li><a href="/ContactUs">Contact Us</a></li>
+          <li><a href="/FAQ">FAQ</a></li>
+          <li><a href="/Products">Products</a></li>
+          {% if 'user_id' in session %}
+          <li class="drop-down"><a href="#">{{ session['user']['fname'] + " " + session['user']['lname'] }}</a>
+            <ul>
+                  {% if session['user_id'] == 1 %}
+                  <li><a href="{{ url_for('user_dashboard') }}">Dashboard</a></li>
+                  <li><a href="{{ url_for('report_generation') }}">Report Generation</a></li>
+                  <li><a href="{{ url_for('retrieve_messages') }}">Retrieve Messages</a></li>
+                  <li><a href="/updateProfile/1">Update Profile</a></li>
+                  {% else %}
+                  <li><a href="/updateProfile/{{session['user_id']}}">Update Profile</a></li>
+                  {% endif %}
+                <li><a href="/profile">Profile</a></li>
+                <li><a href="/cart">Your Cart</a></li>
+                <li><a href="{{ url_for('logout') }}">Logout</a></li>
+            </ul>
+          </li>
+          {% else %}
+          <li><a href="/login">Login</a></li>
+        </ul>
+        {% endif %}
+
+        </ul>
+      </nav><!-- .nav-menu -->
+
+    </div>
+  </header><!-- End Header -->
