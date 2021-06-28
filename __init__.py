@@ -1,3 +1,4 @@
+#test
 import math
 import os
 import random
@@ -76,6 +77,8 @@ def register():
         return render_template('register.html', form=form, error=error)
     else:
         return render_template('register.html', form=form)
+
+
 
 
 @app.route('/login', methods=["GET", "POST"])
