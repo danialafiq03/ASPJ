@@ -730,25 +730,35 @@ def report_generation():
 
 @app.route('/Products', methods=["GET", "POST"])
 def add_to_cart():
+    already_in_cart = False
+    if 'cart' in request.cookies:
+        serialized_encoded_cart_list = request.cookies.get("cart")
+        serialized_cart_list = b64decode(serialized_encoded_cart_list)
+        cart_list = pickle.loads(serialized_cart_list)
+    else:
+        cart_list = []
     if request.method == 'POST':
-        if 'cart' in request.cookies:
-            serialized_encoded_cart_list = request.cookies.get("cart")
-            serialized_cart_list = b64decode(serialized_encoded_cart_list)
-            cart_list = pickle.loads(serialized_cart_list)
-        else:
-            cart_list = []
-
         product_id = request.form.get('product_id')
         product_name = request.form.get('product_name')
         quantity = int(request.form.get('quantity'))
         price = round(float(request.form.get('price')), 2)
-        product_obj = Product.Product(product_id, product_name, quantity, price)
-        cart_list.append(product_obj)
-        response = make_response(redirect(url_for("cart")))
+        for product in cart_list:
+            if product.get_product_id() == product_id:
+                already_in_cart = True
+                current_quantity = product.get_quantity()
+                new_quantity = current_quantity + quantity
+                product.set_quantity(new_quantity)
+                new_price = price * product.get_quantity()
+                product.set_price(new_price)
+                break
+        if not already_in_cart:
+            product_obj = Product.Product(product_id, product_name, quantity, price)
+            cart_list.append(product_obj)
+        response = make_response(redirect(url_for("add_to_cart")))
         response.set_cookie("cart", b64encode(pickle.dumps(cart_list)))
         return response
     else:
-        return render_template('trialproductpage.html')
+        return render_template('trialproductpage.html', cart_list=cart_list)
 
 
 
@@ -767,8 +777,6 @@ def cart():
                 subtotal += product_price
         else:
             cart_list = []
-        # cart_dict = {user_id: cart_list}
-        # cart_list = [<obj>, <obj>, <obj>]
         return render_template('cart.html', cart_list=cart_list, subtotal=round(subtotal, 2))
     else:
         return render_template('cart.html')
@@ -776,28 +784,13 @@ def cart():
 
 @app.route('/deleteProduct/<int:product_id>', methods=["POST"])
 def delete_product(product_id):
-    cart_list = []
-    cart_dict = {}
-    user_id = session['user_id']
-    db = shelve.open('cart.db', 'w')
-    try:
-        cart_dict = db['Cart']
-    except:
-        print('Error in retrieving cart_dict from cart.db')
-
-    try:
-        cart_list = cart_dict[user_id]
-    except:
-        pass
-    # cart_list = [<product object>, <product object>]
-    # cart_dict = { 1: [<product object>, <product object>], 2: [<product object>, <product object]}
+    serialized_encoded_cart_list = request.cookies.get("cart")
+    serialized_cart_list = b64decode(serialized_encoded_cart_list)
+    cart_list = pickle.loads(serialized_cart_list)
     cart_list.pop(product_id)
-    cart_dict[user_id] = cart_list
-    db['Cart'] = cart_dict
-
-    db.close()
-
-    return redirect(url_for('cart'))
+    response = make_response(redirect(url_for("cart")))
+    response.set_cookie("cart", b64encode(pickle.dumps(cart_list)))
+    return response
 
 
 @app.route('/create-checkout-session', methods=['POST'])
@@ -865,6 +858,7 @@ def success():
     db.close()
     return render_template("Thanks.html")
 
+
 @app.errorhandler(404)
 def page_not_found(error):
     # note that we set the 404 status explicitly
@@ -873,6 +867,7 @@ def page_not_found(error):
         <h3>{}</h3>
     '''.format(error, parse.unquote(request.url))
     return render_template_string(template)
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
