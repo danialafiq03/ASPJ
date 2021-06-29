@@ -351,17 +351,17 @@ img {
                   </a>
                 {% endif %}
 <!--//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////-->
-                <h3>{{ review.get_title() }}</h3>
-                <p>{{ review.get_review() }}</p>
+                  <h3>{{ review['title'] }}</h3>
+                <p>{{ review['review'] }}</p>
                 {% if 'user_id' in session %}
-                {% if g.user.get_email() == review.get_user_object().get_email() or session['user_id'] == 1 %}
-                <form action="{{ url_for('delete_review', product_id='IcedCola', id=review.get_review_id())}}" method="POST">
-                  <button type="button" class="deleteButton" data-toggle="modal" data-target="#myModal_{{review.get_review_id()}}">
+                {% if session['user_id'] == review['email'] or session['user_id'] == 1 %}
+                <form action="{{ url_for('delete_review', product_id='IcedCola', id=review['review_id'])}}" method="POST">
+                  <button type="button" class="deleteButton" data-toggle="modal" data-target="#myModal_{{review['review_id']}}">
                     Delete
                   </button>
 
                   <!-- The Modal -->
-                  <div class="modal" id="myModal_{{review.get_review_id()}}">
+                  <div class="modal" id="myModal_{{review['review_id']}}">
                     <div class="modal-dialog">
                       <div class="modal-content">
 
@@ -373,7 +373,7 @@ img {
 
                         <!-- Modal body -->
                         <div class="modal-body">
-                          Are you sure you want to delete Review #{{review.get_review_id()}}?
+                          Are you sure you want to delete Review #{{review['review_id']}}?
                         </div>
 
                         <!-- Modal footer -->
@@ -388,12 +388,12 @@ img {
                 </form>
                 {% endif %}
 
-                {% if g.user.get_email() == review.get_user_object().get_email() %}
+                {% if session['user_id'] == review['user_id'] %}
                 <!-- Trigger the modal with a button -->
-                <button type="button" class="updateButton" data-toggle="modal" data-target="#updateModal_{{review.get_review_id()}}">Update</button>
+                <button type="button" class="updateButton" data-toggle="modal" data-target="#updateModal_{{review['review_id']}}">Update</button>
 
                 <!-- Modal -->
-                <div class="modal fade" id="updateModal_{{review.get_review_id()}}" role="dialog">
+                <div class="modal fade" id="updateModal_{{review['review_id']}}" role="dialog">
                   <div class="modal-dialog">
 
                     <!-- Modal content-->
@@ -403,10 +403,10 @@ img {
                         <button type="button" class="close" data-dismiss="modal">&times;</button>
                       </div>
                       <div class="modal-body">
-                        <form id="updateForm" action="{{ url_for('update_review', product_id='IcedCola', id=review.get_review_id()) }}" method="post">
+                        <form id="updateForm" action="{{ url_for('update_review', product_id='IcedCola', id=review['review_id']) }}" method="post">
                           <div class="form-group">
                             <label for="rating" style="clear:both; width:100%;"><strong>Rating:</strong></label>
-                            <fieldset class="rating" id="rating">
+                            <fieldset class="rating">
                               <input type="radio" id="star5" name="rating" value="5" required/><label for="star5" class="full"><ion-icon name="star"></ion-icon></label>
                               <input type="radio" id="star4" name="rating" value="4"/><label for="star4" class="full"><ion-icon name="star"></ion-icon></label>
                               <input type="radio" id="star3" name="rating" value="3"/><label for="star3" class="full"><ion-icon name="star"></ion-icon></label>
@@ -416,11 +416,11 @@ img {
                           </div>
                           <div class="form-group">
                             <label for="title" style="clear:both; width:100%;"><strong>Title:</strong></label>
-                            <input type="text" name="title" id="title" value="{{ review.get_title() }}" style="width: 75%;">
+                            <input type="text" name="title" value="{{ review.get_title() }}" style="width: 75%;">
                           </div>
                           <div class="form-group">
                             <label for="review" style="clear:both; width:100%;"><strong>Review:</strong></label>
-                            <textarea name="review" id="review" rows="5" cols="55" required>{{ review.get_review() }}</textarea>
+                            <textarea name="review" id="review" rows="5" cols="55" required>{{ review['review'] }}</textarea>
                           </div>
                           <input type="submit" value="Update Review" class="btn btn-primary">
                         </form>
