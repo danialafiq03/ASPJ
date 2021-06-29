@@ -421,84 +421,71 @@ def delete_message(id):
 
 @app.route('/<product_id>/review', methods=['GET', 'POST'])
 def review(product_id):
-    users_dict = {}
     products = ['CknKb', 'CknRc', 'NsLmk', 'RtPrata', 'Water', 'TehTarik', 'IcedCola', 'anw']
     if product_id not in products:
         return '404 Page Not Found'
     else:
         form = ReviewForm(request.form)
         already_submitted = False
-        db_name = 'Review-' + product_id
-        db_count = db_name + '-Count'
         if request.method == 'POST' and form.validate():
-            reviews_dict = {}
-            db = shelve.open('reviews.db', 'c')
-
-            try:
-                reviews_dict = db[db_name]
-            except:
-                print("Error in retrieving Reviews from reviews.db.")
-
-            Review.Review.count_id = db[db_count] + 1
-
-            review = Review.Review(form.rating.data, form.title.data, form.review.data, g.user)
-            setattr(review, 'avatar', g.user.avatar)
-            setattr(review, 'votes', 0)
-            setattr(review, 'upvoters', [])
-            setattr(review, 'downvoters', [])
-            reviews_dict[review.get_review_id()] = review
-            db[db_name] = reviews_dict
-            db.close()
+            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor.execute("SELECT MAX(review_id) FROM reviews")
+            review_id = cursor.fetchone()['MAX(review_id)'] + 1
+            user_dict = session['user']
+            user_id = session['user_id']
+            user_name = user_dict['fname'] + " " + user_dict['lname']
+            avatar = user_dict['avatar']
+            rating = form.rating.data
+            title = form.title.data
+            review = form.review.data
+            votes = 0
+            upvoters = ''  # '1, 3, 5'
+            downvoters = ''
+            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor.execute("INSERT INTO reviews VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')"
+                   %(review_id, product_id, user_id, user_name, avatar, rating, title, review, votes, upvoters, downvoters))
+            mysql.connection.commit()
             return redirect(url_for('review_submitted'))
         elif request.method == 'GET':
-            reviews_dict = {}
-            db = shelve.open('reviews.db', 'c')
-            userdb = shelve.open('register.db', 'w')
-            try:
-                reviews_dict = db[db_name]
-            except:
-                print("Error in retrieving Reviews from reviews.db")
+            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor.execute("SELECT * FROM reviews WHERE product_id = '%s'" % product_id)
+            reviews_list = list(cursor.fetchall())
 
-            try:
-                users_dict = userdb['Users']
-            except:
-                print("Error in retrieving Reviews from reviews.db")
+            # for review in reviews_list:
+            #     for key in users_dict:
+            #         user = users_dict.get(key)
+            #         users_email_list.append(user.get_email())
+            #         if review.get_user_object().get_email() == user.get_email():
+            #             setattr(review.get_user_object(), 'avatar', user.avatar)
+            #             review.get_user_object().set_first_name(user.get_first_name())
+            #             review.get_user_object().set_last_name(user.get_last_name())
+            #     if review.get_user_object().get_email() not in users_email_list:
+            #         review.get_user_object().set_first_name('[deleted]')
+            #         review.get_user_object().set_last_name('')
 
-            reviews_list = []
-            for key in reviews_dict:
-                rev = reviews_dict.get(key)
-                reviews_list.append(rev)
-
-            users_email_list = []
-            for i in range(len(reviews_list)):
-                review = reviews_list[i]
-                for key in users_dict:
-                    user = users_dict.get(key)
-                    users_email_list.append(user.get_email())
-                    if review.get_user_object().get_email() == user.get_email():
-                        setattr(review.get_user_object(), 'avatar', user.avatar)
-                        review.get_user_object().set_first_name(user.get_first_name())
-                        review.get_user_object().set_last_name(user.get_last_name())
-                if review.get_user_object().get_email() not in users_email_list:
-                    review.get_user_object().set_first_name('[deleted]')
-                    review.get_user_object().set_last_name('')
             if 'user_id' in session:
+                for review in reviews_list:
+                    upvoters = review['upvoters']  # '1, 3, 5'
+                    if upvoters == '':
+                        upvoters_list = []
+                    else:
+                        upvoters_list = upvoters.split(", ")  # ['1', '3', '5']
+                        for i in range(0, len(upvoters_list)):
+                            upvoters_list[i] = int(upvoters_list[i])  # [1, 3, 5]
+                    review['upvoters'] = upvoters_list
 
-                for i in range(len(reviews_list)):
-                    review = reviews_list[i]
-                    if g.user.get_email() == review.get_user_object().get_email():
+                    downvoters = review['downvoters']  # '1, 3, 5'
+                    if downvoters == '':
+                        downvoters_list = []
+                    else:
+                        downvoters_list = downvoters.split(", ")  # ['1', '3', '5']
+                        for i in range(0, len(downvoters_list)):
+                            downvoters_list[i] = int(downvoters_list[i])  # [1, 3, 5]
+                    review['downvoters'] = downvoters_list
+
+                    if session['user_id'] == review['user_id']:
                         already_submitted = True
-            reviews_list = sorted(reviews_list, key=lambda review: review.votes, reverse=True)
-
-            db[db_count] = len(reviews_list)
-            new_review_dict = {}
-
-            for index, review in enumerate(reviews_list):
-                review.set_review_id(index + 1)
-                new_review_dict[index + 1] = review
-
-            db[db_name] = new_review_dict
-            db.close()
+            reviews_list = sorted(reviews_list, key=lambda review: review['votes'], reverse=True)
 
             template = 'products/' + product_id + '.html'
             return render_template(template, form=form, count=len(reviews_list), reviews_list=reviews_list,
