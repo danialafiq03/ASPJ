@@ -183,13 +183,11 @@ img {
   margin: 5px 0px 5px 0px;
 }
 
-
 .modal{
   color: black;
 }
 
 </style>
-
 
 <body>
 <h1 class="display-4" style="text-align: center;">Review Product</h1>
@@ -200,7 +198,9 @@ img {
     </div>
   </div>
   <div class="row">
-      <img class="col" src="../static/img/TehTarik.jpg" style="width: 500px; height: auto;">
+    <div>
+      <img class="col" src="../static/img/TehTarik.jpg">
+    </div>
 
     {% if 'user_id' in session %}
     {% if already_submitted %}
@@ -290,67 +290,35 @@ img {
     <p style="font-size: 1.5em; text-align: center;">Be the first to leave a review!</p>
     {% endif %}
     {% for review in reviews_list %}
-    {% if review.get_rating()|int == 5 %}
+    {% if review['rating']|int == 5 %}
     <div class="fivestar review">
-      {% elif review.get_rating()|int == 4 %}
+      {% elif review['rating']|int == 4 %}
       <div class="fourstar review">
-        {% elif review.get_rating()|int == 3 %}
+        {% elif review['rating']|int == 3 %}
         <div class="threestar review">
-          {% elif review.get_rating()|int == 2 %}
+          {% elif review['rating']|int == 2 %}
           <div class="twostar review">
-            {% elif review.get_rating()|int == 1 %}
+            {% elif review['rating']|int == 1 %}
             <div class="onestar review">
               {% endif %}
-              <img src="../static/img/profpic.jpg" alt="" class="profilePic">
+              <div class="profpic">
+                <img src="/static/img/avatars/{{review['avatar']}}" alt="">
+              </div>
               <h2 class="reviewerName">
-                {{ review.get_user_object().get_full_name() }}
-                {% for star in range(review.get_rating()|int) %}
+                {{ review['user_name'] }}
+                {% for star in range(review['rating']|int) %}
                 <ion-icon name="star" style="color: #DAA520;"></ion-icon>
                 {% endfor %}
-                {% for emptystar in range(5-review.get_rating()|int) %}
+                {% for emptystar in range(5-review['rating']|int) %}
                 <ion-icon name="star"></ion-icon>
                 {% endfor %}
               </h2>
               <div class="speech-bubble">
-<!--////////////////////////////////////////////////////////////////////////rating system/////////////////////////////////////////////////////////////////////-->
-                {% if 'user_id' in session %}
-                  {% if g.user.get_email() in review.upvoters %}
-                  <a href="{{ url_for('upvote', product_id='TehTarik', review_id=review.get_review_id()) }}">
-                      <ion-icon name="caret-up-outline" class="upvoteButton" style="color: orange;"></ion-icon>
-                  </a>
-                  {% else %}
-                  <a href="{{ url_for('upvote', product_id='TehTarik', review_id=review.get_review_id()) }}">
-                      <ion-icon name="caret-up-outline" class="upvoteButton"></ion-icon>
-                  </a>
-                  {% endif %}
-
-                  <div class="votes">{{ review.votes }}</div>
-
-                  {% if g.user.get_email() in review.downvoters %}
-                  <a href="{{ url_for('downvote', product_id='TehTarik', review_id=review.get_review_id()) }}">
-                      <ion-icon name="caret-down-outline" class="downvoteButton" style="color: orange;"></ion-icon>
-                  </a>
-                  {% else %}
-                  <a href="{{ url_for('downvote', product_id='TehTarik', review_id=review.get_review_id()) }}">
-                      <ion-icon name="caret-down-outline" class="downvoteButton"></ion-icon>
-                  </a>
-                  {% endif %}
-                {% else %}
-                  <a href="{{ url_for('upvote', product_id='TehTarik', review_id=review.get_review_id()) }}">
-                      <ion-icon name="caret-up-outline" class="upvoteButton"></ion-icon>
-                  </a>
-
-                  <div class="votes">{{ review.votes }}</div>
-
-                  <a href="{{ url_for('downvote', product_id='TehTarik', review_id=review.get_review_id()) }}">
-                      <ion-icon name="caret-down-outline" class="downvoteButton"></ion-icon>
-                  </a>
-                {% endif %}
 <!--//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////-->
                   <h3>{{ review['title'] }}</h3>
                 <p>{{ review['review'] }}</p>
                 {% if 'user_id' in session %}
-                {% if session['user_id'] == review['email'] or session['user_id'] == 1 %}
+                {% if session['user_id'] == review['user_id'] or session['user_id'] == 1 %}
                 <form action="{{ url_for('delete_review', product_id='TehTarik', id=review['review_id'])}}" method="POST">
                   <button type="button" class="deleteButton" data-toggle="modal" data-target="#myModal_{{review['review_id']}}">
                     Delete
