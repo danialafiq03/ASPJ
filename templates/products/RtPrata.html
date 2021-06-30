@@ -315,8 +315,8 @@ img {
               </h2>
               <div class="speech-bubble">
 <!--//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////-->
-                <h3>{{ review['title'] }}</h3>
-                <p>{{ review['review'] }}</p>
+                <h3>{{ review['title']|safe }}</h3>
+                <p>{{ review['review']|safe }}</p>
                 {% if 'user_id' in session %}
                 {% if session['user_id'] == review['email'] or session['user_id'] == 1 %}
                 <form action="{{ url_for('delete_review', product_id='RtPrata', id=review['review_id'])}}" method="POST">
@@ -380,7 +380,7 @@ img {
                           </div>
                           <div class="form-group">
                             <label for="title" style="clear:both; width:100%;"><strong>Title:</strong></label>
-                            <input type="text" name="title" value="{{ review.get_title() }}" style="width: 75%;">
+                            <input type="text" name="title" value="{{ review['title'] }}" style="width: 75%;">
                           </div>
                           <div class="form-group">
                             <label for="review" style="clear:both; width:100%;"><strong>Review:</strong></label>
