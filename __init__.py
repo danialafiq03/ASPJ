@@ -13,7 +13,6 @@ from base64 import b64encode, b64decode
 import pickle
 import Message as Msg
 import Product
-import Review
 from Forms import RegisterForm, ContactUsForm, ReviewForm, reportForm, FAQSearchForm, ForgetPasswordForm
 
 from flask_mysqldb import MySQL
@@ -188,45 +187,63 @@ def user_dashboard():
         return 'You do not have authorized access to this webpage.'
 
 
-# @app.route('/updateUser/<int:id>/', methods=['GET', 'POST'])
-# def update_user(id):
-#     update_user_form = RegisterForm(request.form)
-#     if request.method == 'POST' and update_user_form.validate():
-#         users_dict = {}
-#         db = shelve.open('register.db', 'w')
-#         users_dict = db['Users']
-#
-#         user = users_dict.get(id)
-#
-#         user.set_first_name(update_user_form.first_name.data)
-#         user.set_last_name(update_user_form.last_name.data)
-#         user.set_gender(update_user_form.gender.data)
-#         user.set_password(generate_password_hash(update_user_form.password.data, method='sha256'))
-#         user.set_email(update_user_form.email.data)
-#         db['Users'] = users_dict
-#
-#         db.close()
-#
-#         session['user_updated'] = user.get_first_name() + ' ' + user.get_last_name()
-#
-#         return redirect(url_for('user_dashboard'))
-#     else:
-#         # users_dict = {}
-#         # db = shelve.open('register.db', 'r')
-#         # users_dict = db['Users']
-#         # db.close()
-#
-#         # user = users_dict.get(id)
-#         user = session['user']
-#         update_user_form.first_name.data = user['fname']
-#         update_user_form.last_name.data = user['lname']
-#         update_user_form.gender.data = user['gender']
-#         update_user_form.email.data = user['email']
-#         update_user_form.password.data = user['password']
-#     if 'user_id' in session and session['user_id'] == 1:
-#         return render_template('updateUser.html', form=update_user_form)
-#     else:
-#         return 'You do not have authorized access to this webpage.'
+@app.route('/updateUser/<int:id>/', methods=['GET', 'POST'])
+def update_user(id):
+    update_user_form = RegisterForm(request.form)
+    filename = ''
+    if request.method == 'POST' and update_user_form.validate():
+        user = session['user']
+        avatar = request.files['avatar']
+        if avatar.filename == '':
+            filename = user['avatar']
+        elif avatar and allowed_file(avatar.filename):
+            filename = secure_filename(avatar.filename)
+
+            ver = 0
+            while os.path.isfile('static/img/avatars/' + filename):  # if theres existing file
+                ver += 1
+                for filetype in ALLOWED_EXTENSIONS:
+                    if filetype in filename.split('.'):
+                        filename = avatar.filename.split('.')[0] + str(ver) + '.' + avatar.filename.split('.')[-1]
+            avatar.save(os.path.join('static/img/avatars/', filename))
+        elif not allowed_file(avatar.filename):
+            fileTypeError = 'Invalid file type. (Only accepts .png, .jpg, .jpeg, and .gif files)'
+            return render_template('updateProfile.html', id=id, form=update_user_form, fileTypeError=fileTypeError)
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute("SELECT email FROM accounts")
+        emails = cursor.fetchall()  # looks like this: ({'email': 'admin@gmail.com'}, {'email': 'danial.afiq.official@gmail.com'}, {'email': 'ali@gmail.com'})
+        emails_list = []
+        for dict in emails:
+            emails_list.append(dict['email'])
+        if update_user_form.email.data == user['email']:
+            pass
+        elif update_user_form.email.data in emails_list:
+            emailError = "Email has already been registered!"
+            return render_template('updateProfile.html', id=id, form=update_user_form, emailError=emailError)
+        cursor.execute("UPDATE accounts SET email = '%s', password = '%s', fname = '%s', lname = '%s',"
+                       " gender = '%s', avatar = '%s' WHERE id = '%s'"
+                       %(update_user_form.email.data, update_user_form.password.data, update_user_form.first_name.data,
+                         update_user_form.last_name.data, update_user_form.gender.data, filename, id))
+        mysql.connection.commit()
+        cursor.execute("SELECT * FROM accounts where id = '%s'" % user['id'])
+        user = cursor.fetchone()
+        session['user'] = user
+        session['user_updated'] = user['fname'] + ' ' + user['lname']
+        session['profile_updated'] = 'Profile successfully updated!'
+        return redirect(url_for('user_dashboard'))
+    else:
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute("SELECT * FROM accounts WHERE id = %s" % id)
+        user = cursor.fetchone()
+        update_user_form.first_name.data = user['fname']
+        update_user_form.last_name.data = user['lname']
+        update_user_form.gender.data = user['gender']
+        update_user_form.email.data = user['email']
+        update_user_form.password.data = user['password']
+    if 'user_id' in session and session['user_id'] == 1:
+        return render_template('updateUser.html', form=update_user_form)
+    else:
+        return 'You do not have authorized access to this webpage.'
 
 
 @app.route('/updateProfile/<int:id>/', methods=['GET', 'POST'])
