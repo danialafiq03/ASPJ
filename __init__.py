@@ -24,7 +24,7 @@ app = Flask(__name__)
 app.secret_key = 'secret_key'
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = '@$PJ_Pr0j3ct'
+app.config['MYSQL_PASSWORD'] = 'Joshua123_'
 app.config['MYSQL_DB'] = 'securityproject'
 app.config["MAIL_SERVER"] = "smtp.gmail.com"
 app.config["MAIL_PORT"] = 465
@@ -179,10 +179,10 @@ def user_dashboard():
     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
     cursor.execute("SELECT * FROM accounts")
     users_tuple = cursor.fetchall()
-    if 'user_id' in session and session['user_id'] == 1:
-        return render_template('UserDashboard.html', count=len(users_tuple), users_tuple=users_tuple)
-    else:
-        return 'You do not have authorized access to this webpage.'
+#    if 'user_id' in session and session['user_id'] == 1:
+    return render_template('UserDashboard.html', count=len(users_tuple), users_tuple=users_tuple)
+#    else:
+#        return 'You do not have authorized access to this webpage.'
 
 
 # @app.route('/updateUser/<int:id>/', methods=['GET', 'POST'])
