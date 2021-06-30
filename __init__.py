@@ -277,10 +277,10 @@ def update_profile(id):
         update_user_form.gender.data = user['gender']
         update_user_form.email.data = user['email']
 
-        if 'user_id' in session and session['user_id'] == id:
-            return render_template('updateProfile.html', form=update_user_form)
-        else:
-            return 'You do not have authorized access to this webpage.'
+#        if 'user_id' in session and session['user_id'] == id:
+    return render_template('updateProfile.html', form=update_user_form)
+#        else:
+#            return 'You do not have authorized access to this webpage.'
 
 
 @app.route('/deleteUser/<int:id>', methods=['POST'])
