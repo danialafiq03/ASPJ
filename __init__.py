@@ -18,6 +18,11 @@ from Forms import RegisterForm, ContactUsForm, ReviewForm, reportForm, FAQSearch
 from flask_mysqldb import MySQL
 import MySQLdb.cursors
 
+from logging import FileHandler, WARNING
+file_handler = FileHandler('error.log')
+file_handler.setLevel(WARNING)
+
+
 mail = Mail()
 
 app = Flask(__name__)
@@ -43,6 +48,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 mail.init_app(app)
 mysql = MySQL(app)
 
+app.logger.addHandler(file_handler) #for error logging
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -793,6 +799,10 @@ def success():
     db.close()
     return render_template("Thanks.html")
 
+@app.route('/secret')
+def secret():
+    with open('error.log', 'r') as i:
+        return render_template('secret.html', text=i.read())
 
 @app.errorhandler(404)
 def page_not_found(error):
@@ -805,4 +815,4 @@ def page_not_found(error):
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0')
+    app.run(host='0.0.0.0')
