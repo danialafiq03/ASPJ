@@ -18,6 +18,10 @@ from Forms import RegisterForm, ContactUsForm, ReviewForm, reportForm, FAQSearch
 from flask_mysqldb import MySQL
 import MySQLdb.cursors
 
+from logging import FileHandler, WARNING
+file_handler = FileHandler('error.log')
+file_handler.setLevel(WARNING)
+
 mail = Mail()
 
 app = Flask(__name__)
@@ -43,6 +47,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 mail.init_app(app)
 mysql = MySQL(app)
 
+app.logger.addHandler(file_handler) #for error logging
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -181,10 +186,10 @@ def user_dashboard():
     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
     cursor.execute("SELECT * FROM accounts")
     users_tuple = cursor.fetchall()
-    if 'user_id' in session and session['user_id'] == 1:
-        return render_template('UserDashboard.html', count=len(users_tuple), users_tuple=users_tuple)
-    else:
-        return 'You do not have authorized access to this webpage.'
+    #if 'user_id' in session and session['user_id'] == 1:
+    return render_template('UserDashboard.html', count=len(users_tuple), users_tuple=users_tuple)
+    #else:
+        #return 'You do not have authorized access to this webpage.'
 
 
 @app.route('/updateUser/<int:id>/', methods=['GET', 'POST'])
@@ -297,10 +302,10 @@ def update_profile(id):
         update_user_form.gender.data = user['gender']
         update_user_form.email.data = user['email']
 
-        if 'user_id' in session and session['user_id'] == id:
-            return render_template('updateProfile.html', form=update_user_form)
-        else:
-            return 'You do not have authorized access to this webpage.'
+        #if 'user_id' in session and session['user_id'] == id:
+        return render_template('updateProfile.html', form=update_user_form)
+        #else:
+            #return 'You do not have authorized access to this webpage.'
 
 
 @app.route('/deleteUser/<int:id>', methods=['POST'])
@@ -805,4 +810,4 @@ def page_not_found(error):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
