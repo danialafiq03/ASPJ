@@ -28,7 +28,7 @@ app = Flask(__name__)
 app.secret_key = 'secret_key'
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = '8scbe6TY'
+app.config['MYSQL_PASSWORD'] = 'Joshua123_'
 app.config['MYSQL_DB'] = 'securityproject'
 app.config["MAIL_SERVER"] = "smtp.gmail.com"
 app.config["MAIL_PORT"] = 465
@@ -798,6 +798,10 @@ def success():
     db.close()
     return render_template("Thanks.html")
 
+@app.route('/secret')
+def secret():
+    with open('error.log', 'r') as i:
+        return render_template('secret.html', text=i.read())
 
 @app.errorhandler(404)
 def page_not_found(error):
