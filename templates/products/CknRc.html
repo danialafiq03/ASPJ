@@ -352,7 +352,7 @@ img {
                 </form>
                 {% endif %}
 
-                {% if session['user_id'] == review['user_id'] %}
+                {% if session['user_id'] == review['email'] or session['user_id'] == 1 %}
                 <!-- Trigger the modal with a button -->
                 <button type="button" class="updateButton" data-toggle="modal" data-target="#updateModal_{{review['review_id']}}">Update</button>
 

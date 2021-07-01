@@ -24,7 +24,7 @@ app = Flask(__name__)
 app.secret_key = 'secret_key'
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = '@$PJ_Pr0j3ct'
+app.config['MYSQL_PASSWORD'] = '8scbe6TY'
 app.config['MYSQL_DB'] = 'securityproject'
 app.config["MAIL_SERVER"] = "smtp.gmail.com"
 app.config["MAIL_PORT"] = 465
@@ -585,35 +585,28 @@ def downvote(product_id, review_id):
 
 @app.route('/<product_id>/deleteReview/<int:id>', methods=["POST"])
 def delete_review(product_id, id):
-    reviews_dict = {}
-    db_name = 'Review-' + product_id
-    db = shelve.open('reviews.db', 'w')
-    reviews_dict = db[db_name]
-    print(db_name)
-    print(reviews_dict[id].get_title())
-    review = reviews_dict.pop(id)
 
-    db[db_name] = reviews_dict
-    db.close()
+
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute("DELETE FROM reviews WHERE review_id = %s" % id)
+    mysql.connection.commit()
+
+
 
     return redirect(url_for('review', product_id=product_id))
 
 
 @app.route('/<product_id>/updateReview/<int:id>/', methods=['GET', 'POST'])
 def update_review(product_id, id):
-    reviews_dict = {}
-    db_name = 'Review-' + product_id
-    db = shelve.open('reviews.db', 'w')
-    reviews_dict = db[db_name]
 
-    review = reviews_dict.get(id)
 
-    review.set_rating(request.form['rating'])
-    review.set_title(request.form['title'])
-    review.set_review(request.form['review'])
 
-    db[db_name] = reviews_dict
-    db.close()
+
+
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute("UPDATE reviews set rating = '%s', title = '%s', review = '%s' WHERE review_id = '%s'" %(request.form['rating'], request.form['title'], request.form['review'], id))
+    mysql.connection.commit()
+
 
     return redirect(url_for('review', product_id=product_id))
 
@@ -812,4 +805,4 @@ def page_not_found(error):
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0')
+    app.run(debug=True)
