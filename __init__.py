@@ -1,3 +1,4 @@
+#test
 import math
 import os
 import random
@@ -12,16 +13,10 @@ from base64 import b64encode, b64decode
 import pickle
 import Message as Msg
 import Product
-import Review
 from Forms import RegisterForm, ContactUsForm, ReviewForm, reportForm, FAQSearchForm, ForgetPasswordForm
 
 from flask_mysqldb import MySQL
 import MySQLdb.cursors
-
-from logging import FileHandler, WARNING
-file_handler = FileHandler('error.log')
-file_handler.setLevel(WARNING)
-
 
 mail = Mail()
 
@@ -29,7 +24,7 @@ app = Flask(__name__)
 app.secret_key = 'secret_key'
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = 'Joshua123_'
+app.config['MYSQL_PASSWORD'] = '8scbe6TY'
 app.config['MYSQL_DB'] = 'securityproject'
 app.config["MAIL_SERVER"] = "smtp.gmail.com"
 app.config["MAIL_PORT"] = 465
@@ -48,7 +43,6 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 mail.init_app(app)
 mysql = MySQL(app)
 
-app.logger.addHandler(file_handler) #for error logging
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -82,6 +76,8 @@ def register():
         return render_template('register.html', form=form, error=error)
     else:
         return render_template('register.html', form=form)
+
+
 
 
 @app.route('/login', methods=["GET", "POST"])
@@ -185,51 +181,69 @@ def user_dashboard():
     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
     cursor.execute("SELECT * FROM accounts")
     users_tuple = cursor.fetchall()
-#    if 'user_id' in session and session['user_id'] == 1:
-    return render_template('UserDashboard.html', count=len(users_tuple), users_tuple=users_tuple)
-#    else:
-#        return 'You do not have authorized access to this webpage.'
+    if 'user_id' in session and session['user_id'] == 1:
+        return render_template('UserDashboard.html', count=len(users_tuple), users_tuple=users_tuple)
+    else:
+        return 'You do not have authorized access to this webpage.'
 
 
-# @app.route('/updateUser/<int:id>/', methods=['GET', 'POST'])
-# def update_user(id):
-#     update_user_form = RegisterForm(request.form)
-#     if request.method == 'POST' and update_user_form.validate():
-#         users_dict = {}
-#         db = shelve.open('register.db', 'w')
-#         users_dict = db['Users']
-#
-#         user = users_dict.get(id)
-#
-#         user.set_first_name(update_user_form.first_name.data)
-#         user.set_last_name(update_user_form.last_name.data)
-#         user.set_gender(update_user_form.gender.data)
-#         user.set_password(generate_password_hash(update_user_form.password.data, method='sha256'))
-#         user.set_email(update_user_form.email.data)
-#         db['Users'] = users_dict
-#
-#         db.close()
-#
-#         session['user_updated'] = user.get_first_name() + ' ' + user.get_last_name()
-#
-#         return redirect(url_for('user_dashboard'))
-#     else:
-#         # users_dict = {}
-#         # db = shelve.open('register.db', 'r')
-#         # users_dict = db['Users']
-#         # db.close()
-#
-#         # user = users_dict.get(id)
-#         user = session['user']
-#         update_user_form.first_name.data = user['fname']
-#         update_user_form.last_name.data = user['lname']
-#         update_user_form.gender.data = user['gender']
-#         update_user_form.email.data = user['email']
-#         update_user_form.password.data = user['password']
-#     if 'user_id' in session and session['user_id'] == 1:
-#         return render_template('updateUser.html', form=update_user_form)
-#     else:
-#         return 'You do not have authorized access to this webpage.'
+@app.route('/updateUser/<int:id>/', methods=['GET', 'POST'])
+def update_user(id):
+    update_user_form = RegisterForm(request.form)
+    filename = ''
+    if request.method == 'POST' and update_user_form.validate():
+        user = session['user']
+        avatar = request.files['avatar']
+        if avatar.filename == '':
+            filename = user['avatar']
+        elif avatar and allowed_file(avatar.filename):
+            filename = secure_filename(avatar.filename)
+
+            ver = 0
+            while os.path.isfile('static/img/avatars/' + filename):  # if theres existing file
+                ver += 1
+                for filetype in ALLOWED_EXTENSIONS:
+                    if filetype in filename.split('.'):
+                        filename = avatar.filename.split('.')[0] + str(ver) + '.' + avatar.filename.split('.')[-1]
+            avatar.save(os.path.join('static/img/avatars/', filename))
+        elif not allowed_file(avatar.filename):
+            fileTypeError = 'Invalid file type. (Only accepts .png, .jpg, .jpeg, and .gif files)'
+            return render_template('updateProfile.html', id=id, form=update_user_form, fileTypeError=fileTypeError)
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute("SELECT email FROM accounts")
+        emails = cursor.fetchall()  # looks like this: ({'email': 'admin@gmail.com'}, {'email': 'danial.afiq.official@gmail.com'}, {'email': 'ali@gmail.com'})
+        emails_list = []
+        for dict in emails:
+            emails_list.append(dict['email'])
+        if update_user_form.email.data == user['email']:
+            pass
+        elif update_user_form.email.data in emails_list:
+            emailError = "Email has already been registered!"
+            return render_template('updateProfile.html', id=id, form=update_user_form, emailError=emailError)
+        cursor.execute("UPDATE accounts SET email = '%s', password = '%s', fname = '%s', lname = '%s',"
+                       " gender = '%s', avatar = '%s' WHERE id = '%s'"
+                       %(update_user_form.email.data, update_user_form.password.data, update_user_form.first_name.data,
+                         update_user_form.last_name.data, update_user_form.gender.data, filename, id))
+        mysql.connection.commit()
+        cursor.execute("SELECT * FROM accounts where id = '%s'" % user['id'])
+        user = cursor.fetchone()
+        session['user'] = user
+        session['user_updated'] = user['fname'] + ' ' + user['lname']
+        session['profile_updated'] = 'Profile successfully updated!'
+        return redirect(url_for('user_dashboard'))
+    else:
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute("SELECT * FROM accounts WHERE id = %s" % id)
+        user = cursor.fetchone()
+        update_user_form.first_name.data = user['fname']
+        update_user_form.last_name.data = user['lname']
+        update_user_form.gender.data = user['gender']
+        update_user_form.email.data = user['email']
+        update_user_form.password.data = user['password']
+    if 'user_id' in session and session['user_id'] == 1:
+        return render_template('updateUser.html', form=update_user_form)
+    else:
+        return 'You do not have authorized access to this webpage.'
 
 
 @app.route('/updateProfile/<int:id>/', methods=['GET', 'POST'])
@@ -283,10 +297,10 @@ def update_profile(id):
         update_user_form.gender.data = user['gender']
         update_user_form.email.data = user['email']
 
-#        if 'user_id' in session and session['user_id'] == id:
-    return render_template('updateProfile.html', form=update_user_form)
-#        else:
-#            return 'You do not have authorized access to this webpage.'
+        if 'user_id' in session and session['user_id'] == id:
+            return render_template('updateProfile.html', form=update_user_form)
+        else:
+            return 'You do not have authorized access to this webpage.'
 
 
 @app.route('/deleteUser/<int:id>', methods=['POST'])
@@ -427,84 +441,71 @@ def delete_message(id):
 
 @app.route('/<product_id>/review', methods=['GET', 'POST'])
 def review(product_id):
-    users_dict = {}
     products = ['CknKb', 'CknRc', 'NsLmk', 'RtPrata', 'Water', 'TehTarik', 'IcedCola', 'anw']
     if product_id not in products:
         return '404 Page Not Found'
     else:
         form = ReviewForm(request.form)
         already_submitted = False
-        db_name = 'Review-' + product_id
-        db_count = db_name + '-Count'
         if request.method == 'POST' and form.validate():
-            reviews_dict = {}
-            db = shelve.open('reviews.db', 'c')
-
-            try:
-                reviews_dict = db[db_name]
-            except:
-                print("Error in retrieving Reviews from reviews.db.")
-
-            Review.Review.count_id = db[db_count] + 1
-
-            review = Review.Review(form.rating.data, form.title.data, form.review.data, g.user)
-            setattr(review, 'avatar', g.user.avatar)
-            setattr(review, 'votes', 0)
-            setattr(review, 'upvoters', [])
-            setattr(review, 'downvoters', [])
-            reviews_dict[review.get_review_id()] = review
-            db[db_name] = reviews_dict
-            db.close()
+            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor.execute("SELECT MAX(review_id) FROM reviews")
+            review_id = cursor.fetchone()['MAX(review_id)'] + 1
+            user_dict = session['user']
+            user_id = session['user_id']
+            user_name = user_dict['fname'] + " " + user_dict['lname']
+            avatar = user_dict['avatar']
+            rating = form.rating.data
+            title = form.title.data
+            review = form.review.data
+            votes = 0
+            upvoters = ''  # '1, 3, 5'
+            downvoters = ''
+            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor.execute("INSERT INTO reviews VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')"
+                   %(review_id, product_id, user_id, user_name, avatar, rating, title, review, votes, upvoters, downvoters))
+            mysql.connection.commit()
             return redirect(url_for('review_submitted'))
         elif request.method == 'GET':
-            reviews_dict = {}
-            db = shelve.open('reviews.db', 'c')
-            userdb = shelve.open('register.db', 'w')
-            try:
-                reviews_dict = db[db_name]
-            except:
-                print("Error in retrieving Reviews from reviews.db")
+            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor.execute("SELECT * FROM reviews WHERE product_id = '%s'" % product_id)
+            reviews_list = list(cursor.fetchall())
 
-            try:
-                users_dict = userdb['Users']
-            except:
-                print("Error in retrieving Reviews from reviews.db")
+            # for review in reviews_list:
+            #     for key in users_dict:
+            #         user = users_dict.get(key)
+            #         users_email_list.append(user.get_email())
+            #         if review.get_user_object().get_email() == user.get_email():
+            #             setattr(review.get_user_object(), 'avatar', user.avatar)
+            #             review.get_user_object().set_first_name(user.get_first_name())
+            #             review.get_user_object().set_last_name(user.get_last_name())
+            #     if review.get_user_object().get_email() not in users_email_list:
+            #         review.get_user_object().set_first_name('[deleted]')
+            #         review.get_user_object().set_last_name('')
 
-            reviews_list = []
-            for key in reviews_dict:
-                rev = reviews_dict.get(key)
-                reviews_list.append(rev)
-
-            users_email_list = []
-            for i in range(len(reviews_list)):
-                review = reviews_list[i]
-                for key in users_dict:
-                    user = users_dict.get(key)
-                    users_email_list.append(user.get_email())
-                    if review.get_user_object().get_email() == user.get_email():
-                        setattr(review.get_user_object(), 'avatar', user.avatar)
-                        review.get_user_object().set_first_name(user.get_first_name())
-                        review.get_user_object().set_last_name(user.get_last_name())
-                if review.get_user_object().get_email() not in users_email_list:
-                    review.get_user_object().set_first_name('[deleted]')
-                    review.get_user_object().set_last_name('')
             if 'user_id' in session:
+                for review in reviews_list:
+                    upvoters = review['upvoters']  # '1, 3, 5'
+                    if upvoters == '':
+                        upvoters_list = []
+                    else:
+                        upvoters_list = upvoters.split(", ")  # ['1', '3', '5']
+                        for i in range(0, len(upvoters_list)):
+                            upvoters_list[i] = int(upvoters_list[i])  # [1, 3, 5]
+                    review['upvoters'] = upvoters_list
 
-                for i in range(len(reviews_list)):
-                    review = reviews_list[i]
-                    if g.user.get_email() == review.get_user_object().get_email():
+                    downvoters = review['downvoters']  # '1, 3, 5'
+                    if downvoters == '':
+                        downvoters_list = []
+                    else:
+                        downvoters_list = downvoters.split(", ")  # ['1', '3', '5']
+                        for i in range(0, len(downvoters_list)):
+                            downvoters_list[i] = int(downvoters_list[i])  # [1, 3, 5]
+                    review['downvoters'] = downvoters_list
+
+                    if session['user_id'] == review['user_id']:
                         already_submitted = True
-            reviews_list = sorted(reviews_list, key=lambda review: review.votes, reverse=True)
-
-            db[db_count] = len(reviews_list)
-            new_review_dict = {}
-
-            for index, review in enumerate(reviews_list):
-                review.set_review_id(index + 1)
-                new_review_dict[index + 1] = review
-
-            db[db_name] = new_review_dict
-            db.close()
+            reviews_list = sorted(reviews_list, key=lambda review: review['votes'], reverse=True)
 
             template = 'products/' + product_id + '.html'
             return render_template(template, form=form, count=len(reviews_list), reviews_list=reviews_list,
@@ -584,35 +585,28 @@ def downvote(product_id, review_id):
 
 @app.route('/<product_id>/deleteReview/<int:id>', methods=["POST"])
 def delete_review(product_id, id):
-    reviews_dict = {}
-    db_name = 'Review-' + product_id
-    db = shelve.open('reviews.db', 'w')
-    reviews_dict = db[db_name]
-    print(db_name)
-    print(reviews_dict[id].get_title())
-    review = reviews_dict.pop(id)
 
-    db[db_name] = reviews_dict
-    db.close()
+
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute("DELETE FROM reviews WHERE review_id = %s" % id)
+    mysql.connection.commit()
+
+
 
     return redirect(url_for('review', product_id=product_id))
 
 
 @app.route('/<product_id>/updateReview/<int:id>/', methods=['GET', 'POST'])
 def update_review(product_id, id):
-    reviews_dict = {}
-    db_name = 'Review-' + product_id
-    db = shelve.open('reviews.db', 'w')
-    reviews_dict = db[db_name]
 
-    review = reviews_dict.get(id)
 
-    review.set_rating(request.form['rating'])
-    review.set_title(request.form['title'])
-    review.set_review(request.form['review'])
 
-    db[db_name] = reviews_dict
-    db.close()
+
+
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute("UPDATE reviews set rating = '%s', title = '%s', review = '%s' WHERE review_id = '%s'" %(request.form['rating'], request.form['title'], request.form['review'], id))
+    mysql.connection.commit()
+
 
     return redirect(url_for('review', product_id=product_id))
 
@@ -799,10 +793,6 @@ def success():
     db.close()
     return render_template("Thanks.html")
 
-@app.route('/secret')
-def secret():
-    with open('error.log', 'r') as i:
-        return render_template('secret.html', text=i.read())
 
 @app.errorhandler(404)
 def page_not_found(error):
@@ -815,4 +805,4 @@ def page_not_found(error):
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0')
+    app.run(debug=True)

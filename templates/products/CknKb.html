@@ -189,7 +189,6 @@ img {
 
 </style>
 
-
 <body>
 <h1 class="display-4" style="text-align: center;">Review Product</h1>
 <div class="container product_info">
@@ -200,7 +199,7 @@ img {
   </div>
   <div class="row">
     <div>
-      <img class="col" src="../static/img/foodimage1.jpg">
+      <img class="col" src="../static/img/CknKb.jpg">
     </div>
 
     {% if 'user_id' in session %}
@@ -291,76 +290,42 @@ img {
     <p style="font-size: 1.5em; text-align: center;">Be the first to leave a review!</p>
     {% endif %}
     {% for review in reviews_list %}
-    {% if review.get_rating()|int == 5 %}
+    {% if review['rating']|int == 5 %}
     <div class="fivestar review">
-      {% elif review.get_rating()|int == 4 %}
+      {% elif review['rating']|int == 4 %}
       <div class="fourstar review">
-        {% elif review.get_rating()|int == 3 %}
+        {% elif review['rating']|int == 3 %}
         <div class="threestar review">
-          {% elif review.get_rating()|int == 2 %}
+          {% elif review['rating']|int == 2 %}
           <div class="twostar review">
-            {% elif review.get_rating()|int == 1 %}
+            {% elif review['rating']|int == 1 %}
             <div class="onestar review">
               {% endif %}
               <div class="profpic">
-                <img src="{{review.get_user_object().avatar}}" alt="">
+                <img src="/static/img/avatars/{{review['avatar']}}" alt="">
               </div>
               <h2 class="reviewerName">
-                {{ review.get_user_object().get_full_name() }}
-                {% for star in range(review.get_rating()|int) %}
+                {{ review['user_name'] }}
+                {% for star in range(review['rating']|int) %}
                 <ion-icon name="star" style="color: #DAA520;"></ion-icon>
                 {% endfor %}
-                {% for emptystar in range(5-review.get_rating()|int) %}
+                {% for emptystar in range(5-review['rating']|int) %}
                 <ion-icon name="star"></ion-icon>
                 {% endfor %}
               </h2>
               <div class="speech-bubble">
-<!--////////////////////////////////////////////////////////////////////////rating system/////////////////////////////////////////////////////////////////////-->
-                {% if 'user_id' in session %}
-                  {% if g.user.get_email() in review.upvoters %}
-                  <a href="{{ url_for('upvote', product_id='CknKb', review_id=review.get_review_id()) }}">
-                      <ion-icon name="caret-up-outline" class="upvoteButton" style="color: orange;"></ion-icon>
-                  </a>
-                  {% else %}
-                  <a href="{{ url_for('upvote', product_id='CknKb', review_id=review.get_review_id()) }}">
-                      <ion-icon name="caret-up-outline" class="upvoteButton"></ion-icon>
-                  </a>
-                  {% endif %}
-
-                  <div class="votes">{{ review.votes }}</div>
-
-                  {% if g.user.get_email() in review.downvoters %}
-                  <a href="{{ url_for('downvote', product_id='CknKb', review_id=review.get_review_id()) }}">
-                      <ion-icon name="caret-down-outline" class="downvoteButton" style="color: orange;"></ion-icon>
-                  </a>
-                  {% else %}
-                  <a href="{{ url_for('downvote', product_id='CknKb', review_id=review.get_review_id()) }}">
-                      <ion-icon name="caret-down-outline" class="downvoteButton"></ion-icon>
-                  </a>
-                  {% endif %}
-                {% else %}
-                  <a href="{{ url_for('upvote', product_id='CknKb', review_id=review.get_review_id()) }}">
-                      <ion-icon name="caret-up-outline" class="upvoteButton"></ion-icon>
-                  </a>
-
-                  <div class="votes">{{ review.votes }}</div>
-
-                  <a href="{{ url_for('downvote', product_id='CknKb', review_id=review.get_review_id()) }}">
-                      <ion-icon name="caret-down-outline" class="downvoteButton"></ion-icon>
-                  </a>
-                {% endif %}
 <!--//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////-->
-                <h3>{{ review.get_title() }}</h3>
-                <p>{{ review.get_review() }}</p>
+                <h3>{{ review['title']|safe }}</h3>
+                <p>{{ review['review']|safe }}</p>
                 {% if 'user_id' in session %}
-                {% if g.user.get_email() == review.get_user_object().get_email() or session['user_id'] == 1 %}
-                <form action="{{ url_for('delete_review', product_id='CknKb', id=review.get_review_id())}}" method="POST">
-                  <button type="button" class="deleteButton" data-toggle="modal" data-target="#myModal_{{review.get_review_id()}}">
+                {% if session['user_id'] == review['user_id'] or session['user_id'] == 1 %}
+                <form action="{{ url_for('delete_review', product_id='CknKb', id=review['review_id'])}}" method="POST">
+                  <button type="button" class="deleteButton" data-toggle="modal" data-target="#myModal_{{review['review_id']}}">
                     Delete
                   </button>
 
                   <!-- The Modal -->
-                  <div class="modal" id="myModal_{{review.get_review_id()}}">
+                  <div class="modal" id="myModal_{{review['review_id']}}">
                     <div class="modal-dialog">
                       <div class="modal-content">
 
@@ -372,7 +337,7 @@ img {
 
                         <!-- Modal body -->
                         <div class="modal-body">
-                          Are you sure you want to delete Review #{{review.get_review_id()}}?
+                          Are you sure you want to delete Review #{{review['review_id']}}?
                         </div>
 
                         <!-- Modal footer -->
@@ -387,12 +352,12 @@ img {
                 </form>
                 {% endif %}
 
-                {% if g.user.get_email() == review.get_user_object().get_email() %}
+                {% if session['user_id'] == review['user_id'] %}
                 <!-- Trigger the modal with a button -->
-                <button type="button" class="updateButton" data-toggle="modal" data-target="#updateModal_{{review.get_review_id()}}">Update</button>
+                <button type="button" class="updateButton" data-toggle="modal" data-target="#updateModal_{{review['review_id']}}">Update</button>
 
                 <!-- Modal -->
-                <div class="modal fade" id="updateModal_{{review.get_review_id()}}" role="dialog">
+                <div class="modal fade" id="updateModal_{{review['review_id']}}" role="dialog">
                   <div class="modal-dialog">
 
                     <!-- Modal content-->
@@ -402,7 +367,7 @@ img {
                         <button type="button" class="close" data-dismiss="modal">&times;</button>
                       </div>
                       <div class="modal-body">
-                        <form id="updateForm" action="{{ url_for('update_review', product_id='CknKb', id=review.get_review_id()) }}" method="post">
+                        <form id="updateForm" action="{{ url_for('update_review', product_id='CknKb', id=review['review_id']) }}" method="post">
                           <div class="form-group">
                             <label for="rating" style="clear:both; width:100%;"><strong>Rating:</strong></label>
                             <fieldset class="rating">
@@ -415,11 +380,11 @@ img {
                           </div>
                           <div class="form-group">
                             <label for="title" style="clear:both; width:100%;"><strong>Title:</strong></label>
-                            <input type="text" name="title" value="{{ review.get_title() }}" style="width: 75%;">
+                            <input type="text" name="title" value="{{ review['title'] }}" style="width: 75%;">
                           </div>
                           <div class="form-group">
                             <label for="review" style="clear:both; width:100%;"><strong>Review:</strong></label>
-                            <textarea name="review" id="review" rows="5" cols="55" required>{{ review.get_review() }}</textarea>
+                            <textarea name="review" id="review" rows="5" cols="55" required>{{ review['review'] }}</textarea>
                           </div>
                           <input type="submit" value="Update Review" class="btn btn-primary">
                         </form>
@@ -433,7 +398,6 @@ img {
                 </div>
 
                 {% endif %}
-
                 {% endif %}
               </div>
             </div>
