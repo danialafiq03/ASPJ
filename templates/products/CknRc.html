@@ -315,10 +315,43 @@ img {
               </h2>
               <div class="speech-bubble">
 <!--////////////////////////////////////////////////////////////////////////rating system/////////////////////////////////////////////////////////////////////-->
+                {% if 'user_id' in session %}
+                  {% if session['user_id'] in review['upvoters'] %}
+                  <a href="{{ url_for('upvote', product_id='CknRc', review_id=review['review_id']) }}">
+                      <ion-icon name="caret-up-outline" class="upvoteButton" style="color: orange;"></ion-icon>
+                  </a>
+                  {% else %}
+                  <a href="{{ url_for('upvote', product_id='CknRc', review_id=review['review_id']) }}">
+                      <ion-icon name="caret-up-outline" class="upvoteButton"></ion-icon>
+                  </a>
+                  {% endif %}
+
+                  <div class="votes">{{ review['votes'] }}</div>
+
+                  {% if session['user_id'] in review['downvoters'] %}
+                  <a href="{{ url_for('downvote', product_id='CknRc', review_id=review['review_id']) }}">
+                      <ion-icon name="caret-down-outline" class="downvoteButton" style="color: orange;"></ion-icon>
+                  </a>
+                  {% else %}
+                  <a href="{{ url_for('downvote', product_id='CknRc', review_id=review['review_id']) }}">
+                      <ion-icon name="caret-down-outline" class="downvoteButton"></ion-icon>
+                  </a>
+                  {% endif %}
+                {% else %}
+                  <a href="{{ url_for('upvote', product_id='CknRc', review_id=review['review_id']) }}">
+                      <ion-icon name="caret-up-outline" class="upvoteButton"></ion-icon>
+                  </a>
+
+                  <div class="votes">{{ review['votes'] }}</div>
+
+                  <a href="{{ url_for('downvote', product_id='CknRc', review_id=review['review_id']) }}">
+                      <ion-icon name="caret-down-outline" class="downvoteButton"></ion-icon>
+                  </a>
+                {% endif %}
                 <h3>{{ review['title']|safe }}</h3>
                 <p>{{ review['review']|safe }}</p>
                 {% if 'user_id' in session %}
-                {% if session['user_id'] == review['email'] or session['user_id'] == 1 %}
+                {% if session['user_id'] == review['user_id'] or session['user_id'] == 1 %}
                 <form action="{{ url_for('delete_review', product_id='CknRc', id=review['review_id'])}}" method="POST">
                   <button type="button" class="deleteButton" data-toggle="modal" data-target="#myModal_{{review['review_id']}}">
                     Delete

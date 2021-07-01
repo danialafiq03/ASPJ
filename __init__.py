@@ -28,7 +28,7 @@ app = Flask(__name__)
 app.secret_key = 'secret_key'
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = 'Joshua123_'
+app.config['MYSQL_PASSWORD'] = '@$PJ_Pr0j3ct'
 app.config['MYSQL_DB'] = 'securityproject'
 app.config["MAIL_SERVER"] = "smtp.gmail.com"
 app.config["MAIL_PORT"] = 465
@@ -525,31 +525,38 @@ def review_submitted():
 @app.route('/<product_id>/review/upvote/<int:review_id>/')
 def upvote(product_id, review_id):
     if 'user_id' in session:
-        reviews_dict = {}
-        db_name = 'Review-' + product_id
-        db = shelve.open('reviews.db', 'w')
-        reviews_dict = db[db_name]
-
-        review = reviews_dict.get(review_id)
-
-        downvoters = review.downvoters
-        upvoters = review.upvoters
-        if g.user.get_email() in upvoters:
-            votes = review.votes - 1
-            setattr(review, 'votes', votes)
-            upvoters.remove(g.user.get_email())
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute("SELECT * from reviews where review_id = '%s'" % review_id)
+        review = cursor.fetchone()
+        if review['upvoters'] == '':
+            upvoters = []
         else:
-            votes = review.votes
-            if g.user.get_email() in downvoters:
-                votes = review.votes + 1
-                downvoters.remove(g.user.get_email())
+            upvoters = review['upvoters'].split(", ")
+            for i in range(0, len(upvoters)):
+                upvoters[i] = int(upvoters[i])
+        if review['downvoters'] == '':
+            downvoters = []
+        else:
+            downvoters = review['downvoters'].split(", ")
+            for i in range(0, len(downvoters)):
+                downvoters[i] = int(downvoters[i])
+
+        if session['user_id'] in upvoters:
+            votes = review['votes'] - 1
+            upvoters.remove(session['user_id'])
+
+        else:
+            votes = review['votes']
+            if session['user_id'] in downvoters:
+                votes = review['votes'] + 1
+                downvoters.remove(session['user_id'])
             votes = votes + 1
-            setattr(review, 'votes', votes)
-            upvoters.append(g.user.get_email())
-            setattr(review, 'upvoters', upvoters)
-        print(review.upvoters)
-        db[db_name] = reviews_dict
-        db.close()
+            upvoters.append(session['user_id'])
+
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute("UPDATE reviews SET votes = '%s', upvoters = '%s', downvoters = '%s' WHERE review_id = '%s'"
+                       % (votes, str(upvoters).strip('[]'), str(downvoters).strip('[]'), review_id))
+        mysql.connection.commit()
         return redirect(url_for('review', product_id=product_id))
     else:
         return redirect(url_for('login'))
@@ -558,31 +565,38 @@ def upvote(product_id, review_id):
 @app.route('/<product_id>/review/downvote/<int:review_id>/')
 def downvote(product_id, review_id):
     if 'user_id' in session:
-        reviews_dict = {}
-        db_name = 'Review-' + product_id
-        db = shelve.open('reviews.db', 'w')
-        reviews_dict = db[db_name]
-
-        review = reviews_dict.get(review_id)
-
-        upvoters = review.upvoters
-        downvoters = review.downvoters
-        if g.user.get_email() in downvoters:
-            votes = review.votes + 1
-            setattr(review, 'votes', votes)
-            downvoters.remove(g.user.get_email())
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute("SELECT * from reviews where review_id = '%s'" % review_id)
+        review = cursor.fetchone()
+        if review['upvoters'] == '':
+            upvoters = []
         else:
-            votes = review.votes
-            if g.user.get_email() in upvoters:
-                votes = review.votes - 1
-                upvoters.remove(g.user.get_email())
+            upvoters = review['upvoters'].split(", ")
+            for i in range(0, len(upvoters)):
+                upvoters[i] = int(upvoters[i])
+        if review['downvoters'] == '':
+            downvoters = []
+        else:
+            downvoters = review['downvoters'].split(", ")
+            for i in range(0, len(downvoters)):
+                downvoters[i] = int(downvoters[i])
+
+        if session['user_id'] in downvoters:  #if downvoted alr
+            votes = review['votes'] + 1
+            downvoters.remove(session['user_id'])
+
+        else:
+            votes = review['votes']
+            if session['user_id'] in upvoters:
+                votes = review['votes'] - 1
+                upvoters.remove(session['user_id'])
             votes = votes - 1
-            setattr(review, 'votes', votes)
-            downvoters.append(g.user.get_email())
-            setattr(review, 'downvoters', downvoters)
-        print(review.downvoters)
-        db[db_name] = reviews_dict
-        db.close()
+            downvoters.append(session['user_id'])
+
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute("UPDATE reviews SET votes = '%s', upvoters = '%s', downvoters = '%s' WHERE review_id = '%s'"
+                       % (votes, str(upvoters).strip('[]'), str(downvoters).strip('[]'), review_id))
+        mysql.connection.commit()
         return redirect(url_for('review', product_id=product_id))
     else:
         return redirect(url_for('login'))

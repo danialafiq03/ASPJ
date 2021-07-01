@@ -314,6 +314,40 @@ img {
                 {% endfor %}
               </h2>
               <div class="speech-bubble">
+<!--////////////////////////////////////////////////////////////////////////rating system/////////////////////////////////////////////////////////////////////-->
+                {% if 'user_id' in session %}
+                  {% if session['user_id'] in review['upvoters'] %}
+                  <a href="{{ url_for('upvote', product_id='Water', review_id=review['review_id']) }}">
+                      <ion-icon name="caret-up-outline" class="upvoteButton" style="color: orange;"></ion-icon>
+                  </a>
+                  {% else %}
+                  <a href="{{ url_for('upvote', product_id='Water', review_id=review['review_id']) }}">
+                      <ion-icon name="caret-up-outline" class="upvoteButton"></ion-icon>
+                  </a>
+                  {% endif %}
+
+                  <div class="votes">{{ review['votes'] }}</div>
+
+                  {% if session['user_id'] in review['downvoters'] %}
+                  <a href="{{ url_for('downvote', product_id='Water', review_id=review['review_id']) }}">
+                      <ion-icon name="caret-down-outline" class="downvoteButton" style="color: orange;"></ion-icon>
+                  </a>
+                  {% else %}
+                  <a href="{{ url_for('downvote', product_id='Water', review_id=review['review_id']) }}">
+                      <ion-icon name="caret-down-outline" class="downvoteButton"></ion-icon>
+                  </a>
+                  {% endif %}
+                {% else %}
+                  <a href="{{ url_for('upvote', product_id='Water', review_id=review['review_id']) }}">
+                      <ion-icon name="caret-up-outline" class="upvoteButton"></ion-icon>
+                  </a>
+
+                  <div class="votes">{{ review['votes'] }}</div>
+
+                  <a href="{{ url_for('downvote', product_id='Water', review_id=review['review_id']) }}">
+                      <ion-icon name="caret-down-outline" class="downvoteButton"></ion-icon>
+                  </a>
+                {% endif %}
 <!--//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////-->
                 <h3>{{ review['title']|safe }}</h3>
                 <p>{{ review['review']|safe }}</p>
