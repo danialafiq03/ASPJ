@@ -17,7 +17,7 @@ from Forms import RegisterForm, ContactUsForm, ReviewForm, reportForm, FAQSearch
 
 from flask_mysqldb import MySQL
 import MySQLdb.cursors
-
+from dotenv import load_dotenv
 from logging import FileHandler, WARNING
 file_handler = FileHandler('error.log')
 file_handler.setLevel(WARNING)
@@ -25,20 +25,19 @@ file_handler.setLevel(WARNING)
 mail = Mail()
 
 app = Flask(__name__)
-app.secret_key = 'secret_key'
-app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = '@$PJ_Pr0j3ct'
-app.config['MYSQL_DB'] = 'securityproject'
-app.config["MAIL_SERVER"] = "smtp.gmail.com"
-app.config["MAIL_PORT"] = 465
-app.config["MAIL_USE_SSL"] = True
-app.config["MAIL_USERNAME"] = 'abcrestaurant4@gmail.com'
-app.config["MAIL_PASSWORD"] = 'nypAppDev123'
-app.config['STRIPE PUBLIC KEY'] = 'pk_test_lfuZUTGObUfh7pa11TSt8CeA'
-app.config[
-    'STRIPE_SECRET_KEY'] = 'sk_test_51Bn3MVDe4uhAIaEt75dOEI0bOr2ZI2RVfKSdSAxvvVnWYyjEsPsXm0BeU8WpKWTlNP82M7lKmd0GMAJL6umBRhh900DVMUFavT'
-stripe.api_key = 'sk_test_51Bn3MVDe4uhAIaEt75dOEI0bOr2ZI2RVfKSdSAxvvVnWYyjEsPsXm0BeU8WpKWTlNP82M7lKmd0GMAJL6umBRhh900DVMUFavT'
+load_dotenv()
+
+app.secret_key = os.environ["FLASK_SECRET_KEY"]
+
+app.config["MYSQL_HOST"] = os.environ["MYSQL_HOST"]
+app.config["MYSQL_USER"] = os.environ["MYSQL_USER"]
+app.config["MYSQL_PASSWORD"] = os.environ["MYSQL_PASSWORD"]
+app.config["MYSQL_DB"] = os.environ["MYSQL_DB"]
+
+app.config["MAIL_USERNAME"] = os.environ["MAIL_USERNAME"]
+app.config["MAIL_PASSWORD"] = os.environ["MAIL_PASSWORD"]
+
+stripe.api_key = os.environ["STRIPE_SECRET_KEY"]
 UPLOAD_FOLDER = '/static/img/avatars'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
